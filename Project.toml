@@ -1,0 +1,7 @@
+name = "CheckedSizeProduct"
+uuid = "1b2cc9da-92e3-4b71-9788-30fc110eefda"
+authors = ["Neven Sajko <s@purelymail.com> and contributors"]
+version = "1.0.0"
+
+[compat]
+julia = "1.10"
