@@ -30,39 +30,34 @@ module CheckedSizeProduct
 
     const NonemptyNTuple = Tuple{T, Vararg{T, N}} where {T, N}
 
-    function checked_dims_impl1(have_overflow::Bool, a, ::Tuple{})
+    function checked_dims_impl(t::NonemptyNTuple)
+        a = first(t)
+        have_overflow = false
+        for i ∈ eachindex(t)[(begin + 1):end]
+            b = t[i]
+            (m, o) = Base.Checked.mul_with_overflow(a, b)
+            a = m
+            have_overflow |= o
+        end
         (a, have_overflow)
-    end
-    function checked_dims_impl1(have_overflow::Bool, a::T, t::NonemptyNTuple{T, N}) where {T, N}
-        b = first(t)
-        (m, o) = Base.Checked.mul_with_overflow(a, b)
-        p = have_overflow | o
-        r = Base.tail(t)::NTuple{N, T}
-        checked_dims_impl1(p, m, r)::Tuple{T, Bool}
-    end
-
-    function checked_dims_impl0(a::T, t::NTuple{N, T}) where {T, N}
-        checked_dims_impl1(false, a, t)::Tuple{T, Bool}
     end
 
     const Terminates = Union{
         Int8, Int16, Int32, Int64, Int128,
     }
 
-    function checked_dims(a::T, t::NTuple{N, T}) where {T, N}
-        checked_dims_impl0(a, t)
+    function checked_dims(t::NonemptyNTuple)
+        checked_dims_impl(t)
     end
-    Base.@assume_effects :terminates_globally function checked_dims(a::T, t::NTuple{N, T}) where {T <: Terminates, N}
-        checked_dims_impl0(a, t)
+    Base.@assume_effects :terminates_globally function checked_dims(t::(NonemptyNTuple{T} where {T <: Terminates}))
+        checked_dims_impl(t)
     end
 
     function checked_size_product_impl(t::NonemptyNTuple{T, N}) where {T, N}
         any_is_zero     = any(iszero, t)::Bool
         any_is_negative = any(<(false), t)::Bool
         any_is_typemax  = any(==(typemax(T)), t)::Bool
-        a = first(t)
-        r = Base.tail(t)::NTuple{N, T}
-        (product, have_overflow) = checked_dims(a, r)
+        (product, have_overflow) = checked_dims(t)
         is_not_representable = have_overflow & !any_is_zero
         if !(any_is_negative | any_is_typemax | is_not_representable)
             product
