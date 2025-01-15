@@ -70,4 +70,7 @@ module CheckedSizeProduct
         p = promote(t...)
         checked_size_product_impl(p)  # avoid infinite recursion in case `promote` is quirky
     end
+    function checked_size_product(t::NonemptyNTuple)
+        checked_size_product_impl(t)
+    end
 end
