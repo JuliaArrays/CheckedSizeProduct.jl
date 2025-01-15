@@ -44,7 +44,8 @@ using Aqua: Aqua
         for t ∈ (
             (m, m), (15, m), (m, 15), (m, m, m), (1, m, m), (m, 1, m), (m, m, 1),
         )
-            @test (checked_size_product(t)).is_not_representable
+            @test !(checked_size_product(t)).any_is_negative
+            @test !(checked_size_product(t)).any_is_typemax
         end
     end
     @testset "overflows, but OK because of multiplication with zero" begin

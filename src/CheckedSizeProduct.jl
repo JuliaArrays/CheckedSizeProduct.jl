@@ -16,11 +16,12 @@ module CheckedSizeProduct
        and `==`.
     2. Calculate the product. In case no element is negative, no element is
        `typemax(T)` and the product is representable as `T`, return the product.
-       Otherwise, return a `NamedTuple` containing three Boolean properties:
+       Otherwise, return a `NamedTuple` containing two Boolean properties:
         * `any_is_negative`: at least one element is negative
         * `any_is_typemax`: at least one element is the maximum value representable
           in the given type, as given by `typemax`
-        * `is_not_representable`: the product is not representable as `T`
+       If a `NamedTuple` is returned with both fields `false`, the product is not
+       representable as `T`.
 
     Throws when given an empty tuple to avoid having to choose a default return
     type arbitrarily.
@@ -66,7 +67,7 @@ module CheckedSizeProduct
         if !(any_is_negative | any_is_typemax | is_not_representable)
             product
         else
-            (; any_is_negative, any_is_typemax, is_not_representable)
+            (; any_is_negative, any_is_typemax)
         end
     end
 
