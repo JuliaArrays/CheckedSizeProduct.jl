@@ -33,7 +33,7 @@ module CheckedSizeProduct
     function checked_dims_impl(t::NonemptyNTuple)
         a = first(t)
         have_overflow = false
-        for i ∈ eachindex(t)[(begin + 1):end]
+        for i ∈ eachindex(t)[2:end]
             b = t[i]
             (m, o) = Base.Checked.mul_with_overflow(a, b)
             a = m
@@ -49,8 +49,12 @@ module CheckedSizeProduct
     function checked_dims(t::NonemptyNTuple)
         checked_dims_impl(t)
     end
-    Base.@assume_effects :terminates_globally function checked_dims(t::(NonemptyNTuple{T} where {T <: Terminates}))
-        checked_dims_impl(t)
+    @static if isdefined(Base, Symbol("@assume_effects"))
+        Base.@assume_effects :terminates_globally function checked_dims(
+            t::(NonemptyNTuple{T} where {T <: Terminates}),
+        )
+            checked_dims_impl(t)
+        end
     end
 
     function checked_size_product_impl(t::NonemptyNTuple{T, N}) where {T, N}
@@ -62,7 +66,7 @@ module CheckedSizeProduct
         if !(any_is_negative | any_is_typemax | is_not_representable)
             product
         else
-            (; any_is_negative, any_is_typemax)
+            (; any_is_negative = any_is_negative, any_is_typemax = any_is_typemax)
         end
     end
 
