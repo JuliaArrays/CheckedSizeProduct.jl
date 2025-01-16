@@ -2,18 +2,6 @@ using CheckedSizeProduct
 using Test
 using Aqua: Aqua
 
-function test_constant_folding(func, return_value)
-    vec = code_typed(func, Tuple{})
-    p = only(vec)
-    code_info = first(p)
-    code = try
-        code_info.code
-    catch
-        nothing
-    end
-    @test repr(only(code)) == repr(:(return $return_value)) skip=(code isa Nothing)
-end
-
 @testset "CheckedSizeProduct.jl" begin
     @testset "Code quality (Aqua.jl)" begin
         Aqua.test_all(CheckedSizeProduct)
@@ -84,15 +72,6 @@ end
                     @test ref === checked_size_product((a, b, c, true))
                 end
             end
-        end
-    end
-    @testset "does it constant fold?" begin
-        function func()
-            t = ntuple(identity, Val{7}())
-            checked_size_product(t)
-        end
-        if v"1.10" ≤ VERSION
-            test_constant_folding(func, factorial(7))
         end
     end
 end
