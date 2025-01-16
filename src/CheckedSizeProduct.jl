@@ -12,8 +12,8 @@ module CheckedSizeProduct
 
     In more detail; given a nonempty tuple of `Integer`-likes:
     1. Promote the elements to a common concrete type, say `T`. The user must
-       ensure `T` supports `Base.Checked.mul_with_overflow`, `iszero`, `typemax`
-       and `==`.
+       ensure `T` supports `Base.Checked.mul_with_overflow`, `iszero`, `typemax`,
+       `<` and `==`.
     2. Calculate the product. In case no element is negative, no element is
        `typemax(T)` and the product is representable as `T`, return the product.
        Otherwise, return a `NamedTuple` containing two Boolean properties:
