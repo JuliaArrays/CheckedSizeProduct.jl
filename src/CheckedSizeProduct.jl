@@ -49,8 +49,12 @@ module CheckedSizeProduct
     function checked_dims(t::NonemptyNTuple)
         checked_dims_impl(t)
     end
-    Base.@assume_effects :terminates_globally function checked_dims(t::(NonemptyNTuple{T} where {T <: Terminates}))
-        checked_dims_impl(t)
+    @static if isdefined(Base, Symbol("@assume_effects"))
+        Base.@assume_effects :terminates_globally function checked_dims(
+            t::(NonemptyNTuple{T} where {T <: Terminates}),
+        )
+            checked_dims_impl(t)
+        end
     end
 
     function checked_size_product_impl(t::NonemptyNTuple{T, N}) where {T, N}
