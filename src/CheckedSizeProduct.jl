@@ -33,7 +33,7 @@ module CheckedSizeProduct
     function checked_dims_impl(t::NonemptyNTuple)
         a = first(t)
         have_overflow = false
-        for i ∈ eachindex(t)[(begin + 1):end]
+        for i ∈ eachindex(t)[2:end]
             b = t[i]
             (m, o) = Base.Checked.mul_with_overflow(a, b)
             a = m
