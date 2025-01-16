@@ -2,6 +2,52 @@ using CheckedSizeProduct
 using Test
 using Aqua: Aqua
 
+module ExampleInts
+    export ExampleInt
+    struct ExampleInt
+        v::Int
+        function ExampleInt(v::Int)
+            new(v)
+        end
+    end
+    function Base.iszero(n::ExampleInt)
+        iszero(n.v)
+    end
+    function Base.typemax(n::ExampleInt)
+        ExampleInt(typemax(n.v))
+    end
+    function Base.Checked.mul_with_overflow(l::ExampleInt, r::ExampleInt)
+        (p, f) = Base.Checked.mul_with_overflow(l.v, r.v)
+        (ExampleInt(p), f)
+    end
+    function Base.:(<)(l::ExampleInt, r::Int)
+        l.v < r
+    end
+    function Base.promote_rule(::Type{Int}, ::Type{ExampleInt})
+        ExampleInt
+    end
+    function Base.promote_rule(::Type{ExampleInt}, ::Type{Int})
+        ExampleInt
+    end
+    function Base.promote_rule(::Type{Bool}, ::Type{ExampleInt})
+        ExampleInt
+    end
+    function Base.promote_rule(::Type{ExampleInt}, ::Type{Bool})
+        ExampleInt
+    end
+    function ExampleInt(n)
+        ExampleInt(Int(n)::Int)
+    end
+    function Base.convert(::Type{ExampleInt}, n)
+        ExampleInt(n)
+    end
+    function Base.convert(::Type{ExampleInt}, n::ExampleInt)
+        n
+    end
+end
+
+using .ExampleInts: ExampleInt
+
 @testset "CheckedSizeProduct.jl" begin
     @testset "Code quality (Aqua.jl)" begin
         Aqua.test_all(CheckedSizeProduct)
@@ -10,7 +56,7 @@ using Aqua: Aqua
         @test_throws Exception checked_size_product(())
     end
     @testset "singleton input" begin
-        for T ∈ (Int8, Int16, Int32, Int64, Int128)
+        for T ∈ (Int8, Int16, Int32, Int64, Int128, ExampleInt)
             for x ∈ 0:100
                 y = T(x)
                 @test y === checked_size_product((y,))
@@ -22,6 +68,8 @@ using Aqua: Aqua
         @test 10 === checked_size_product((2, Int8(5)))
         @test Int16(10) === checked_size_product((Int8(2), Int16(5)))
         @test Int16(10) === checked_size_product((Int16(2), Int8(5)))
+        @test ExampleInt(6) === checked_size_product((2, ExampleInt(3)))
+        @test ExampleInt(6) === checked_size_product((ExampleInt(2), 3))
     end
     @testset "input includes negative" begin
         for t ∈ (
@@ -29,6 +77,8 @@ using Aqua: Aqua
             (-1, typemax(Int)), (typemax(Int), -1),
         )
             @test (checked_size_product(t)).any_is_negative
+            s = map(ExampleInt, t)
+            @test (checked_size_product(s)).any_is_negative
         end
     end
     @testset "input includes `typemax(T)`" begin
@@ -37,6 +87,8 @@ using Aqua: Aqua
             (m,), (m, m), (1, m), (m, 1), (0, m), (m, 0), (-1, m), (m, -1),
         )
             @test (checked_size_product(t)).any_is_typemax
+            s = map(ExampleInt, t)
+            @test (checked_size_product(s)).any_is_typemax
         end
     end
     @testset "overflows" begin
@@ -46,6 +98,9 @@ using Aqua: Aqua
         )
             @test !(checked_size_product(t)).any_is_negative
             @test !(checked_size_product(t)).any_is_typemax
+            s = map(ExampleInt, t)
+            @test !(checked_size_product(s)).any_is_negative
+            @test !(checked_size_product(s)).any_is_typemax
         end
     end
     @testset "overflows, but OK because of multiplication with zero" begin
@@ -54,22 +109,26 @@ using Aqua: Aqua
             (m, m, 0), (m, 0, m), (0, m, m),
         )
             @test 0 === checked_size_product(t)
+            s = map(ExampleInt, t)
+            @test ExampleInt(0) === checked_size_product(s)
         end
     end
-    @testset "exhaustive over small `Int8` values" begin
+    @testset "exhaustive over small values" begin
         ran = 0:4
         for x ∈ ran
             for y ∈ ran
                 for z ∈ ran
-                    ref = Int8(prod((x, y, z)))
-                    a = Int8(x)
-                    b = Int8(y)
-                    c = Int8(z)
-                    @test ref === checked_size_product((a, b, c))
-                    @test ref === checked_size_product((true, a, b, c))
-                    @test ref === checked_size_product((a, true, b, c))
-                    @test ref === checked_size_product((a, b, true, c))
-                    @test ref === checked_size_product((a, b, c, true))
+                    for T ∈ (Int8, Int16, Int32, Int64, Int128, ExampleInt)
+                        ref = T(prod((x, y, z)))
+                        a = T(x)
+                        b = T(y)
+                        c = T(z)
+                        @test ref === checked_size_product((a, b, c))
+                        @test ref === checked_size_product((true, a, b, c))
+                        @test ref === checked_size_product((a, true, b, c))
+                        @test ref === checked_size_product((a, b, true, c))
+                        @test ref === checked_size_product((a, b, c, true))
+                    end
                 end
             end
         end
