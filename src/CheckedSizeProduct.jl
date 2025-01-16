@@ -66,7 +66,7 @@ module CheckedSizeProduct
         if !(any_is_negative | any_is_typemax | is_not_representable)
             product
         else
-            (; any_is_negative, any_is_typemax)
+            (; any_is_negative = any_is_negative, any_is_typemax = any_is_typemax)
         end
     end
 
