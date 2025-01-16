@@ -30,7 +30,15 @@ module CheckedSizeProduct
 
     const NonemptyNTuple = Tuple{T, Vararg{T, N}} where {T, N}
 
-    function checked_dims_impl(t::NonemptyNTuple)
+    macro assume_terminates_locally(x)
+        if isdefined(Base, Symbol("@assume_effects"))
+            :(Base.@assume_effects :terminates_locally $x)
+        else
+            x
+        end
+    end
+
+    @assume_terminates_locally function checked_dims_impl(t::NonemptyNTuple)
         a = first(t)
         have_overflow = false
         for i ∈ eachindex(t)[2:end]
@@ -42,7 +50,7 @@ module CheckedSizeProduct
         (a, have_overflow)
     end
 
-    const Terminates = Union{
+    const HasGoodEffects = Union{
         Int8, Int16, Int32, Int64, Int128,
     }
 
@@ -50,8 +58,8 @@ module CheckedSizeProduct
         checked_dims_impl(t)
     end
     @static if isdefined(Base, Symbol("@assume_effects"))
-        Base.@assume_effects :terminates_globally function checked_dims(
-            t::(NonemptyNTuple{T} where {T <: Terminates}),
+        Base.@assume_effects :nothrow function checked_dims(
+            t::(NonemptyNTuple{T} where {T <: HasGoodEffects}),
         )
             checked_dims_impl(t)
         end
