@@ -141,4 +141,11 @@ using .ExampleInts: ExampleInt
             end
         end
     end
+    @testset "the return type should infer exactly for constant input" begin
+        function func()
+            t = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+            checked_size_product(t)
+        end
+        (v"1.10" ≤ VERSION) && @test factorial(9) === @inferred func()
+    end
 end
