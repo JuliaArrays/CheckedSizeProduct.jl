@@ -2,6 +2,28 @@ module CheckedSizeProduct
     export checked_size_product
 
     """
+        StatusInvalidValue::DataType
+
+    Singleton type. Returned by [`checked_size_product`](@ref) in case its input
+    contained an invalid value. An invalid value is either:
+    * less than zero
+    * equal to `typemax(T)`
+
+    See also: [`StatusOverflow`](@ref)
+    """
+    struct StatusInvalidValue end
+
+    """
+        StatusOverflow::DataType
+
+    Singleton type. Returned by [`checked_size_product`](@ref) in case the product
+    is not representable in the element type of the input.
+
+    See also: [`StatusInvalidValue`](@ref)
+    """
+    struct StatusOverflow end
+
+    """
         checked_size_product(size_tuple)
 
     In short; a safe product, suitable for computing, e.g., the value of
@@ -22,12 +44,11 @@ module CheckedSizeProduct
         * `==`
     2. Calculate the product. In case no element is negative, no element is
        `typemax(T)` and the product is representable as `T`, return the product.
-       Otherwise, return a `NamedTuple` containing two Boolean properties:
-        * `any_is_negative`: at least one element is negative
-        * `any_is_typemax`: at least one element is the maximum value representable
-          in the given type, as given by `typemax`
-       If a `NamedTuple` is returned with both fields `false`, the product is not
-       representable as `T`.
+       Otherwise return:
+        * a value of type [`StatusInvalidValue`]: the input contains a negative
+          element, or an element equal to `typemax(T)`
+        * a value of type [`StatusOverflow`]: the product is not representable as
+          `T`
 
     Throws when given an empty tuple to avoid having to choose a default return
     type arbitrarily.
@@ -106,7 +127,11 @@ module CheckedSizeProduct
         if !(any_is_negative | any_is_typemax | is_not_representable)
             product
         else
-            (; any_is_negative = any_is_negative, any_is_typemax = any_is_typemax)
+            if any_is_negative | any_is_typemax
+                StatusInvalidValue()
+            else
+                StatusOverflow()
+            end
         end
     end
 end

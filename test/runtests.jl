@@ -72,9 +72,9 @@ using .ExampleInts: ExampleInt
             (-1, typemax(Int)), (typemax(Int), -1),
             (0, -4, -4), (-4, 1, 0), (-4, -4, 1),
         )
-            @test (checked_size_product(t)).any_is_negative
+            @test checked_size_product(t) isa CheckedSizeProduct.StatusInvalidValue
             s = map(ExampleInt, t)
-            @test (checked_size_product(s)).any_is_negative
+            @test checked_size_product(s) isa CheckedSizeProduct.StatusInvalidValue
         end
     end
     @testset "input includes `typemax(T)`" begin
@@ -89,9 +89,9 @@ using .ExampleInts: ExampleInt
         for t ∈ (
             (m,), (m, m), (1, m), (m, 1), (0, m), (m, 0), (-1, m), (m, -1),
         )
-            @test (checked_size_product(t)).any_is_typemax
+            @test checked_size_product(t) isa CheckedSizeProduct.StatusInvalidValue
             s = map(ExampleInt, t)
-            @test (checked_size_product(s)).any_is_typemax
+            @test checked_size_product(s) isa CheckedSizeProduct.StatusInvalidValue
         end
     end
     @testset "overflows" begin
@@ -101,11 +101,9 @@ using .ExampleInts: ExampleInt
             (m, m), (15, m), (m, 15), (m, m, m), (1, m, m), (m, 1, m), (m, m, 1),
             (b, b), (1, b, b),
         )
-            @test !(checked_size_product(t)).any_is_negative
-            @test !(checked_size_product(t)).any_is_typemax
+            @test checked_size_product(t) isa CheckedSizeProduct.StatusOverflow
             s = map(ExampleInt, t)
-            @test !(checked_size_product(s)).any_is_negative
-            @test !(checked_size_product(s)).any_is_typemax
+            @test checked_size_product(s) isa CheckedSizeProduct.StatusOverflow
         end
     end
     @testset "overflows, but OK because of multiplication with zero" begin
