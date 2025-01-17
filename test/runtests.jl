@@ -75,6 +75,7 @@ using .ExampleInts: ExampleInt
         for t ∈ (
             (-1,), (-1, 1), (1, -1), (0, -1), (-1, 0), (-1, -1),
             (-1, typemax(Int)), (typemax(Int), -1),
+            (0, -4, -4), (-4, 1, 0), (-4, -4, 1),
         )
             @test (checked_size_product(t)).any_is_negative
             s = map(ExampleInt, t)
@@ -82,6 +83,13 @@ using .ExampleInts: ExampleInt
         end
     end
     @testset "input includes `typemax(T)`" begin
+        # Why is `typemax(T)` even disallowed:
+        #
+        # > Yes, I specifically wanted maxdim+1 to be representable, since
+        # > otherwise other off-by-one math representations become much harder,
+        # > and that makes boundschecking slower.
+        #
+        # https://github.com/JuliaLang/julia/pull/54255#pullrequestreview-2024051188
         m = typemax(Int)
         for t ∈ (
             (m,), (m, m), (1, m), (m, 1), (0, m), (m, 0), (-1, m), (m, -1),
@@ -93,8 +101,10 @@ using .ExampleInts: ExampleInt
     end
     @testset "overflows" begin
         m = typemax(Int) ÷ 13
+        b = (Int == Int64) ? 2^32 : 2^16
         for t ∈ (
             (m, m), (15, m), (m, 15), (m, m, m), (1, m, m), (m, 1, m), (m, m, 1),
+            (b, b), (1, b, b),
         )
             @test !(checked_size_product(t)).any_is_negative
             @test !(checked_size_product(t)).any_is_typemax
@@ -105,8 +115,10 @@ using .ExampleInts: ExampleInt
     end
     @testset "overflows, but OK because of multiplication with zero" begin
         m = typemax(Int) ÷ 13
+        b = (Int == Int64) ? 2^32 : 2^16
         for t ∈ (
             (m, m, 0), (m, 0, m), (0, m, m),
+            (0, b, b), (b, b, 0), (b, b, 0, b, b),
         )
             @test 0 === checked_size_product(t)
             s = map(ExampleInt, t)
