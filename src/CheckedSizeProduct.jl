@@ -97,7 +97,7 @@ module CheckedSizeProduct
         end
     end
 
-    function checked_size_product(t::NonemptyNTuple{T, N}) where {T, N}
+    function checked_size_product(t::NonemptyNTuple)
         any_is_zero = any_(iszero, t)
         any_is_negative = any_(is_negative, t)
         any_is_typemax = any_(is_typemax, t)
