@@ -2,7 +2,7 @@ module CheckedSizeProduct
     export checked_size_product
 
     """
-        checked_size_product(::Tuple{Any, Vararg})
+        checked_size_product(size_tuple)
 
     In short; a safe product, suitable for computing, e.g., the value of
     `length(dense_array)` from the value of `size(dense_array)`. In case everything
@@ -10,10 +10,16 @@ module CheckedSizeProduct
     tuple. Otherwise, return a `NamedTuple` containing Boolean values with
     information on the encountered problems.
 
-    In more detail; given a nonempty tuple of `Integer`-likes:
-    1. Promote the elements to a common concrete type, say `T`. The user must
-       ensure `T` supports `Base.Checked.mul_with_overflow`, `iszero`, `typemax`,
-       `<` and `==`.
+    In more detail; given `size_tuple`, a nonempty homogeneous tuple of
+    `Integer`-likes:
+    0. Give the name `T` to `eltype(size_tuple)` for the purposes of this doc
+       string.
+    1. The user must ensure `T` supports:
+        * `Base.Checked.mul_with_overflow`
+        * `iszero`
+        * `typemax`
+        * `<`
+        * `==`
     2. Calculate the product. In case no element is negative, no element is
        `typemax(T)` and the product is representable as `T`, return the product.
        Otherwise, return a `NamedTuple` containing two Boolean properties:
@@ -91,7 +97,7 @@ module CheckedSizeProduct
         end
     end
 
-    function checked_size_product_impl(t::NonemptyNTuple{T, N}) where {T, N}
+    function checked_size_product(t::NonemptyNTuple)
         any_is_zero = any_(iszero, t)
         any_is_negative = any_(is_negative, t)
         any_is_typemax = any_(is_typemax, t)
@@ -102,13 +108,5 @@ module CheckedSizeProduct
         else
             (; any_is_negative = any_is_negative, any_is_typemax = any_is_typemax)
         end
-    end
-
-    function checked_size_product(t::NonemptyNTuple{Any})
-        p = promote(t...)
-        checked_size_product_impl(p)  # avoid infinite recursion in case `promote` is quirky
-    end
-    function checked_size_product(t::NonemptyNTuple)
-        checked_size_product_impl(t)
     end
 end

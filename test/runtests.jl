@@ -55,6 +55,9 @@ using .ExampleInts: ExampleInt
     @testset "empty input" begin
         @test_throws Exception checked_size_product(())
     end
+    @testset "heterogeneous input" begin
+        @test_throws Exception checked_size_product((Int32(2), Int64(3)))
+    end
     @testset "singleton input" begin
         for T ∈ (Int8, Int16, Int32, Int64, Int128, ExampleInt)
             for x ∈ 0:100
@@ -62,14 +65,6 @@ using .ExampleInts: ExampleInt
                 @test y === checked_size_product((y,))
             end
         end
-    end
-    @testset "promotion" begin
-        @test 10 === checked_size_product((Int8(2), 5))
-        @test 10 === checked_size_product((2, Int8(5)))
-        @test Int16(10) === checked_size_product((Int8(2), Int16(5)))
-        @test Int16(10) === checked_size_product((Int16(2), Int8(5)))
-        @test ExampleInt(6) === checked_size_product((2, ExampleInt(3)))
-        @test ExampleInt(6) === checked_size_product((ExampleInt(2), 3))
     end
     @testset "input includes negative" begin
         for t ∈ (
@@ -132,14 +127,15 @@ using .ExampleInts: ExampleInt
                 for z ∈ ran
                     for T ∈ (Int8, Int16, Int32, Int64, Int128, ExampleInt)
                         ref = T(prod((x, y, z)))
+                        o = T(1)
                         a = T(x)
                         b = T(y)
                         c = T(z)
                         @test ref === checked_size_product((a, b, c))
-                        @test ref === checked_size_product((true, a, b, c))
-                        @test ref === checked_size_product((a, true, b, c))
-                        @test ref === checked_size_product((a, b, true, c))
-                        @test ref === checked_size_product((a, b, c, true))
+                        @test ref === checked_size_product((o, a, b, c))
+                        @test ref === checked_size_product((a, o, b, c))
+                        @test ref === checked_size_product((a, b, o, c))
+                        @test ref === checked_size_product((a, b, c, o))
                     end
                 end
             end
