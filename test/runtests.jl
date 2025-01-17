@@ -55,6 +55,9 @@ using .ExampleInts: ExampleInt
     @testset "empty input" begin
         @test_throws Exception checked_size_product(())
     end
+    @testset "heterogeneous input" begin
+        @test_throws Exception checked_size_product((Int32(2), Int64(3)))
+    end
     @testset "singleton input" begin
         for T ∈ (Int8, Int16, Int32, Int64, Int128, ExampleInt)
             for x ∈ 0:100
