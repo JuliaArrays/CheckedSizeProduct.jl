@@ -8,4 +8,7 @@
 
 A small Julia package for safely calculating the length of an in-memory dense array given its dimensions.
 
-The only public functionality is the exported function `checked_size_product`.
+The only public functionality is:
+* the exported function `checked_size_product`
+* the type `StatusInvalidValue`, not exported
+* the type `StatusOverflow`, not exported
