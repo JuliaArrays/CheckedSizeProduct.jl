@@ -77,7 +77,7 @@ module CheckedSizeProduct
         (a, have_overflow)
     end
 
-    @assume_terminates_locally function any_impl(f, t::NonemptyNTuple)
+    @assume_terminates_locally function any_impl(f, t::NTuple)
         a = false
         for i ∈ eachindex(t)
             e = t[i]
