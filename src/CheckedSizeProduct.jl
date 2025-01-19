@@ -78,9 +78,10 @@ module CheckedSizeProduct
     end
 
     @assume_terminates_locally function any_impl(f, t::NonemptyNTuple)
-        a = f(first(t))::Bool  # assuming no `missing`
-        for i ∈ eachindex(t)[2:end]
-            b = f(t[i])::Bool
+        a = false
+        for i ∈ eachindex(t)
+            e = t[i]
+            b = f(e)::Bool  # assuming no `missing`
             a |= b
         end
         a
