@@ -35,6 +35,8 @@ end
 
 using .ExampleInts: ExampleInt
 
+const eltypes = (Int8, Int16, Int32, Int64, Int128, ExampleInt, BigInt)
+
 @testset "CheckedSizeProduct.jl" begin
     @testset "empty input" begin
         @test_throws MethodError checked_size_product(())
@@ -43,7 +45,7 @@ using .ExampleInts: ExampleInt
         @test_throws MethodError checked_size_product((Int32(2), Int64(3)))
     end
     @testset "singleton input" begin
-        for T ∈ (Int8, Int16, Int32, Int64, Int128, ExampleInt)
+        for T ∈ eltypes
             for x ∈ 0:100
                 y = T(x)
                 @test y === checked_size_product((y,))
@@ -107,17 +109,17 @@ using .ExampleInts: ExampleInt
         for x ∈ ran
             for y ∈ ran
                 for z ∈ ran
-                    for T ∈ (Int8, Int16, Int32, Int64, Int128, ExampleInt)
+                    for T ∈ eltypes
                         ref = T(prod((x, y, z)))
                         o = T(1)
                         a = T(x)
                         b = T(y)
                         c = T(z)
-                        @test ref === checked_size_product((a, b, c))
-                        @test ref === checked_size_product((o, a, b, c))
-                        @test ref === checked_size_product((a, o, b, c))
-                        @test ref === checked_size_product((a, b, o, c))
-                        @test ref === checked_size_product((a, b, c, o))
+                        @test ref == checked_size_product((a, b, c))::T
+                        @test ref == checked_size_product((o, a, b, c))::T
+                        @test ref == checked_size_product((a, o, b, c))::T
+                        @test ref == checked_size_product((a, b, o, c))::T
+                        @test ref == checked_size_product((a, b, c, o))::T
                     end
                 end
             end
