@@ -25,6 +25,26 @@ module CheckedSizeProduct
        and the product does not overflow, return the product. Otherwise return `nothing`.
 
     Throws if `isempty(size_tuple)` to avoid having to choose a return type arbitrarily.
+
+    ### Usage examples in the REPL
+
+    ```jldoctest
+    julia> using CheckedSizeProduct
+
+    julia> checked_size_product((3, 7))
+    21
+
+    julia> checked_size_product((3, -7))
+
+    julia> checked_size_product((0, -7))
+
+    julia> checked_size_product((0, 7))
+    0
+
+    julia> checked_size_product(())
+    ERROR: MethodError: no method matching checked_size_product(::Tuple{})
+    [...]
+    ```
     """
     function checked_size_product end
 
