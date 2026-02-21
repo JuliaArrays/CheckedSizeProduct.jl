@@ -81,16 +81,18 @@ module CheckedSizeProduct
         x == typemax(x)
     end
 
+    function is_negative_or_typemax(x)
+        is_negative(x) | is_typemax(x)
+    end
+
     function typeassert_bool(x::Bool)
         x
     end
 
     function checked_size_product(t::NonemptyNTuple)
         any_is_zero = any(typeassert_bool ∘ iszero, t)
-        any_is_negative = any(typeassert_bool ∘ is_negative, t)
-        any_is_typemax = any(typeassert_bool ∘ is_typemax, t)
+        any_is_invalid = any(typeassert_bool ∘ is_negative_or_typemax, t)
         (product, have_overflow) = checked_dims(t)
-        any_is_invalid = any_is_negative | any_is_typemax
         is_not_representable = have_overflow & !any_is_zero
         if any_is_invalid | is_not_representable
             nothing
