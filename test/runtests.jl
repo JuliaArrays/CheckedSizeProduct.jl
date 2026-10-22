@@ -37,6 +37,11 @@ using .ExampleInts: ExampleInt
 
 const eltypes = (Int8, Int16, Int32, Int64, Int128, ExampleInt, BigInt)
 
+# The size tuple is a static parameter, so a constant for the compiler.
+function constant_size_product(::Val{t}) where {t}
+    Val(checked_size_product(t))
+end
+
 @testset "CheckedSizeProduct.jl" begin
     @testset "empty input" begin
         @test_throws MethodError checked_size_product(())
@@ -121,6 +126,36 @@ const eltypes = (Int8, Int16, Int32, Int64, Int128, ExampleInt, BigInt)
                         @test ref == checked_size_product((a, b, o, c))::T
                         @test ref == checked_size_product((a, b, c, o))::T
                     end
+                end
+            end
+        end
+    end
+    @testset "long input" begin
+        for n ∈ (8, 32, 64, 100)
+            @test [Union{Nothing, Int}] == Base.return_types(checked_size_product, (NTuple{n, Int},))
+            @test 1 === checked_size_product(ntuple(i -> 1, n))
+            @test 0 === checked_size_product(ntuple(i -> (i == n) ? 0 : 1, n))
+            @test nothing === checked_size_product(ntuple(i -> (i == n) ? -1 : 1, n))
+            # `2^(Sys.WORD_SIZE - 1)` is not representable as an `Int`
+            ref = (n ≤ Sys.WORD_SIZE - 2) ? 2^n : nothing
+            @test ref === checked_size_product(ntuple(i -> 2, n))
+            @test 0 === checked_size_product(ntuple(i -> (i == n) ? 0 : 2, n))
+        end
+    end
+    if VERSION ≥ v"1.10"
+        @testset "constant folding" begin
+            @test [Val{60}] == Base.return_types(() -> Val(checked_size_product((3, 4, 5))), ())
+            # For types wider than `Int` (e.g. `Int64` on 32-bit platforms), `Base` implements
+            # `mul_with_overflow` in software, which may not be constant-folded.
+            for T ∈ filter(T -> isbitstype(T) && sizeof(T) ≤ sizeof(Int), eltypes)
+                m = typemax((T <: Integer) ? T : Int)
+                inputs = (
+                    (3, 4, 5), (0, -1), (-1, 3, 4), (3, 4, 0), (m, 1), (m ÷ 2, 3), (m ÷ 2, 3, 0),
+                    map(n -> ntuple(i -> isodd(i) ? 1 : 2, n), (1, 2, 3, 4, 5, 6, 8, 16, 32))...,
+                )
+                for t ∈ inputs
+                    s = map(T, t)
+                    @test [Val{checked_size_product(s)}] == Base.return_types(constant_size_product, (Val{s},))
                 end
             end
         end

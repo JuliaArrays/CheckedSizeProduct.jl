@@ -50,24 +50,29 @@ module CheckedSizeProduct
 
     const NonemptyNTuple = Tuple{T, Vararg{T, N}} where {T, N}
 
-    macro assume_terminates_locally(x)
-        if isdefined(Base, Symbol("@assume_effects"))
-            :(Base.@assume_effects :terminates_locally $x)
-        else
-            x
-        end
+    # The reductions over the tuple are recursive rather than loops, so that they're
+    # unrolled already in the Julia IR: loops count heavily towards the inlining cost of
+    # the callers, e.g. preventing inlining of functions which allocate arrays.
+
+    function checked_dims_recursive(a, have_overflow::Bool, ::Tuple{})
+        (a, have_overflow)
     end
 
-    @assume_terminates_locally function checked_dims(t::NonemptyNTuple)
-        a = first(t)
-        tl = Base.tail(t)
-        have_overflow = false
-        for b ∈ tl
-            (m, o) = Base.Checked.mul_with_overflow(a, b)
-            a = m
-            have_overflow |= o
-        end
-        (a, have_overflow)
+    function checked_dims_recursive(a, have_overflow::Bool, t::Tuple)
+        (m, o) = Base.Checked.mul_with_overflow(a, first(t))
+        checked_dims_recursive(m, have_overflow | o, Base.tail(t))
+    end
+
+    function checked_dims(t::NonemptyNTuple)
+        checked_dims_recursive(first(t), false, Base.tail(t))
+    end
+
+    function any_nonshortcircuiting(::Any, ::Tuple{})
+        false
+    end
+
+    function any_nonshortcircuiting(f, t::Tuple)
+        f(first(t)) | any_nonshortcircuiting(f, Base.tail(t))
     end
 
     function is_negative(x)
@@ -90,8 +95,8 @@ module CheckedSizeProduct
     end
 
     function checked_size_product(t::NonemptyNTuple)
-        any_is_zero = any(typeassert_bool ∘ iszero, t)
-        any_is_invalid = any(typeassert_bool ∘ is_negative_or_typemax, t)
+        any_is_zero = any_nonshortcircuiting(typeassert_bool ∘ iszero, t)
+        any_is_invalid = any_nonshortcircuiting(typeassert_bool ∘ is_negative_or_typemax, t)
         (product, have_overflow) = checked_dims(t)
         is_not_representable = have_overflow & !any_is_zero
         if any_is_invalid | is_not_representable
