@@ -71,7 +71,9 @@ jobs:
         with:
           coverage: ${{ matrix.code-coverage }}
       - uses: julia-actions/julia-processcoverage@v1
+        if: ${{ matrix.code-coverage == 'true' }}
       - uses: codecov/codecov-action@v7
+        if: ${{ matrix.code-coverage == 'true' }}
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
