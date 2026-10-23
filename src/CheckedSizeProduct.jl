@@ -52,7 +52,9 @@ module CheckedSizeProduct
 
     # The reductions over the tuple are recursive rather than loops, so that they're
     # unrolled already in the Julia IR: loops count heavily towards the inlining cost of
-    # the callers, e.g. preventing inlining of functions which allocate arrays.
+    # the callers, e.g. preventing inlining of functions which allocate arrays.  For tuples
+    # longer than 32 elements we fall back to loops, as compilation time of the recursion
+    # grows superlinearly with the length of the tuple.
 
     function checked_dims_recursive(a, have_overflow::Bool, ::Tuple{})
         (a, have_overflow)
@@ -75,6 +77,26 @@ module CheckedSizeProduct
         f(first(t)) | any_nonshortcircuiting(f, Base.tail(t))
     end
 
+    macro assume_terminates_locally(x)
+        if isdefined(Base, Symbol("@assume_effects"))
+            :(Base.@assume_effects :terminates_locally $x)
+        else
+            x
+        end
+    end
+
+    @assume_terminates_locally function checked_dims_loop(t::NonemptyNTuple)
+        a = first(t)
+        tl = Base.tail(t)
+        have_overflow = false
+        for b ∈ tl
+            (m, o) = Base.Checked.mul_with_overflow(a, b)
+            a = m
+            have_overflow |= o
+        end
+        (a, have_overflow)
+    end
+
     function is_negative(x)
         x < typeof(x)(0)
     end
@@ -95,9 +117,15 @@ module CheckedSizeProduct
     end
 
     function checked_size_product(t::NonemptyNTuple)
-        any_is_zero = any_nonshortcircuiting(typeassert_bool ∘ iszero, t)
-        any_is_invalid = any_nonshortcircuiting(typeassert_bool ∘ is_negative_or_typemax, t)
-        (product, have_overflow) = checked_dims(t)
+        if length(t) ≤ 32
+            any_is_zero = any_nonshortcircuiting(typeassert_bool ∘ iszero, t)
+            any_is_invalid = any_nonshortcircuiting(typeassert_bool ∘ is_negative_or_typemax, t)
+            (product, have_overflow) = checked_dims(t)
+        else
+            any_is_zero = any(typeassert_bool ∘ iszero, t)
+            any_is_invalid = any(typeassert_bool ∘ is_negative_or_typemax, t)
+            (product, have_overflow) = checked_dims_loop(t)
+        end
         is_not_representable = have_overflow & !any_is_zero
         if any_is_invalid | is_not_representable
             nothing
