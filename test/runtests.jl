@@ -36,6 +36,7 @@ end
 using .ExampleInts: ExampleInt
 
 const eltypes = (Int8, Int16, Int32, Int64, Int128, ExampleInt, BigInt)
+const code_coverage_enabled = Base.JLOptions().code_coverage != 0
 
 # The size tuple is a static parameter, so a constant for the compiler.
 function constant_size_product(::Val{t}) where {t}
@@ -175,7 +176,7 @@ end
                 # Julia v1.8 does not prove consistency, required for constant folding.
                 if VERSION ≥ v"1.9"
                     @test Core.Compiler.is_consistent(effects)
-                    @test Core.Compiler.is_foldable(effects)
+                    @test Core.Compiler.is_foldable(effects) skip = code_coverage_enabled
                 end
             end
         end
