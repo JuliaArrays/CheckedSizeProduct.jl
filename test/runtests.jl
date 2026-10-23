@@ -169,8 +169,10 @@ end
             if VERSION ≥ v"1.11"
                 lengths = (lengths..., 33:250...)
             end
-            # Arithmetic on `BigInt`s is never proven to terminate.
-            for T ∈ filter(isbitstype, eltypes), n ∈ lengths
+            # Arithmetic on `BigInt`s is never proven to terminate.  On 32-bit platforms the
+            # `Int128` division used by `mul_with_overflow` goes through `BigInt`s, too.
+            is_tested_eltype(T) = isbitstype(T) && !(Sys.WORD_SIZE == 32 && T === Int128)
+            for T ∈ filter(is_tested_eltype, eltypes), n ∈ lengths
                 effects = Base.infer_effects(checked_size_product, (NTuple{n, T},))
                 @test Core.Compiler.is_terminates(effects)
                 # Julia v1.8 does not prove consistency, required for constant folding.
