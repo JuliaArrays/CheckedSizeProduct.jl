@@ -160,6 +160,26 @@ end
             end
         end
     end
+    if isdefined(Base, :infer_effects)
+        @testset "effects" begin
+            # Termination of the loops over tuples longer than 32 elements is proven only
+            # from Julia v1.11.
+            lengths = Tuple(1:32)
+            if VERSION ≥ v"1.11"
+                lengths = (lengths..., 33:250...)
+            end
+            # Arithmetic on `BigInt`s is never proven to terminate.
+            for T ∈ filter(isbitstype, eltypes), n ∈ lengths
+                effects = Base.infer_effects(checked_size_product, (NTuple{n, T},))
+                @test Core.Compiler.is_terminates(effects)
+                # Julia v1.8 does not prove consistency, required for constant folding.
+                if VERSION ≥ v"1.9"
+                    @test Core.Compiler.is_consistent(effects)
+                    @test Core.Compiler.is_foldable(effects)
+                end
+            end
+        end
+    end
 end
 
 using Aqua: Aqua
