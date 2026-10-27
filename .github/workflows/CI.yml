@@ -62,6 +62,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+      - name: Allow executable stack with Julia v1.9
+        if: ${{ matrix.version == '1.9' }}
+        run: |
+          # New versions of glibc don't allow executable stack, Julia v1.9 comes
+          # with a build of openlibm which uses that.  Ref:
+          # <https://github.com/JuliaLang/julia/issues/57250#issuecomment-2834911167>.
+          echo "GLIBC_TUNABLES=glibc.rtld.execstack=2" | tee -a "${GITHUB_ENV}"
       - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
